@@ -46,17 +46,15 @@ pruned_model = copy.deepcopy(model)
 layers = list(pruned_model.model.layers)
 
 drop_layers = {
-    3,4,8,10,
-    12, 13, 14, 15,
-    16, 17,
-    19, 20, 21, 22
+    3
 }
 """
 observations
 I thought what if its just that 2 layers consecutively might have soemthing 
 so I tried removing in clusters
 I removed 3,4 - no issue
-8,10  - still no issue
+8,10  - still n
+o issue
 
 12, 13, 14, 15, 16, 17
 What is the capital of France? (in the other words)
