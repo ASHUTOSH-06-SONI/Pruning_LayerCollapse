@@ -3,15 +3,40 @@ import torch
 def quantize_per_tensor_symmetric(x: torch.Tensor, bits: int=8):
     alpha = x.abs().max() # maximum magnitude 
     S = alpha/(2**(bits-1)-1) # scale factor 
-    x_quantized = torch.clamp(torch.round(x/S),-(2**(bits-1)),2**(bits-1)-1)
+    x_quantized = torch.clamp(torch.round(x/S),-(2**(bits-1)),2**(bits-1)-1) #make a range by clamp
     return x_quantized ,S
 def dequantize(x_quantized: torch.Tensor,S:float):
     return x_quantized*S
+def quantize_per_channel_symmetric(x: torch.Tensor, bits:int = 8):
+    alpha = x.abs().max(dim = 1, keepdim = True).values 
+    # finding max for every row here coz now we're scaling per row 
+    S = alpha/(2**(bits-1)-1)
+    x_quant = torch.clamp(torch.round(x/S),-(2**(bits-1)),2**(bits-1)-1)
+    return x_quant, S
+def dequantize_per_channel(x_quant: torch.Tensor, S: torch.Tensor):
+    return x_quant * S
 
+# for single tensor
 x = torch.tensor([1.5,-2.3,0.7,-0.1,3.1])
 x_quantized, S = quantize_per_tensor_symmetric(x)
 x_deq = dequantize(x_quantized, S)
-print(f"Original:     {x}")
-print(f"Quantized:    {x_quantized}")
-print(f"Dequantized:  {x_deq}")
-print(f"Error:        {(x - x_deq).abs().max():.5f}")
+
+
+#for entire channel 
+x2 = torch.tensor([
+    [0.01, -0.02, 0.005, -0.008],   # tiny range
+    [50.0, -80.0, 30.0, -100.0]     # huge range
+    #basically experimenting with a larger range 
+])
+
+x_q, S2 = quantize_per_channel_symmetric(x2)
+x_deq2 = dequantize_per_channel(x_q, S2)
+
+print(f"Scale factors: {S2.squeeze()}")
+print(f"Original:\n{x2}")
+print(f"Dequantized:\n{x_deq2}")
+print(f"Per-row error: {(x2 - x_deq2).abs().max(dim=1).values}")
+print(f"Original:     {x2}")
+print(f"Quantized:    {x_q}")
+print(f"Dequantized:  {x_deq2}")
+print(f"Error:        {(x2 - x_deq2).abs().max():.5f}")
